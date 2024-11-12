@@ -572,18 +572,37 @@ def predict_main_class(X, Y, n_pca_components=5, test_size=0.2, random_state=42)
 X_numeric = X.drop(columns=['Condition Name'])
 accuracy, rf_model = predict_main_class(X_numeric, Y)
 
+# ===================================== Subclass Prediction =================================
 
-# Subclass 
 
-# Assuming df contains your dataset, and 'Condition Name' is the target variable (subclass)
+pca = PCA(n_components=7)
+X_pca = pca.fit_transform(X_numeric)
 
-# Step 1: Drop 'Condition Name' to use it as the target variable (Y_subclass)
+clf_cross_val_score=cross_val_score(rf_model, X_pca, Y, cv=5)
+clf_cross_val_score.mean(), clf_cross_val_score
+print(f"\n\n")
+print(clf_cross_val_score)
+
+# Subclass Model
+
 X_numeric = X.drop(columns=['Condition Name'])  # Features
 Y_subclass = X['Condition Name']        # Target (subclass labels)
 
-# Step 2: Standardize the features
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X_numeric)  # Scale the features
+
+
+#considering various type 1 & 2 error as Type-1 and Type-2 error
+Y_subclass = Y_subclass.replace({'Type-1 variation B': 'Type-1 error',
+                                 'Type-1 variation A': 'Type-1 error',
+                                 'Type-1 variation C': 'Type-1 error',
+                                 'Type-1 variation D': 'Type-1 error',
+                                 'Type-2 variation A': 'Type-2 error',
+                                 'Type-2 variation D': 'Type-2 error',
+                                 'Type-2 variation E': 'Type-2 error',
+                                 'Core fault-1': 'Core fault',
+                                 'Core fault-2': 'Core fault'
+                                 })
 
 # Step 3: Apply PCA to reduce dimensionality (let's assume 7 components)
 pca = PCA(n_components=7)
@@ -591,6 +610,8 @@ X_pca = pca.fit_transform(X_scaled)
 
 # Step 4: Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X_pca, Y_subclass, test_size=0.15, random_state=42)
+
+# ========= SVM Model ======
 
 # Step 5: Train SVM model with linear kernel
 svm_model = SVC(kernel='linear', random_state=42)
@@ -601,43 +622,42 @@ y_pred = svm_model.predict(X_test)
 
 # Step 7: Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-print(f"Accuracy of SVM model: {accuracy}")
+
 
 # Classification report
-print("\nClassification Report:")
+print("\nClassification Report (SVM):")
 print(classification_report(y_test, y_pred))
+print(f"\nAccuracy of SVM model: {accuracy}")
 
-# Assuming df contains your dataset, and 'Condition Name' is the target variable (subclass)
+#======== Random Forest=============
 
-# Step 1: Drop 'Condition Name' to use it as the target variable (Y_subclass)
-X_numeric = X.drop(columns=['Condition Name'])
-Y_subclass = X['Condition Name']
 
-# Step 2: Standardize the features
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X_numeric)  # Scale the features
-
-# Step 3: Apply PCA to reduce dimensionality (assuming 5 components)
-pca = PCA(n_components=7)
-X_pca = pca.fit_transform(X_scaled)
-
-# Step 4: Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X_pca, Y_subclass, test_size=0.2, random_state=42)
 
-# Step 5: Train Decision Tree Classifier model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+
+accuracy = accuracy_score(y_test, y_pred)
+
+
+# Classification report
+print("\nClassification Report (RandomForest):")
+print(classification_report(y_test, y_pred))
+print(f"\nAccuracy of random forest classifier model: {accuracy}")
+
+# ========== DecisionTree =============
+
 decision_tree = DecisionTreeClassifier(random_state=42)
 decision_tree.fit(X_train, y_train)
 
-# Step 6: Make predictions
 y_pred = decision_tree.predict(X_test)
 
-# Step 7: Evaluate the model
 accuracy = accuracy_score(y_test, y_pred)
-print(f"Accuracy of Decision Tree Classifier model: {accuracy}")
 
 # Classification report
-print("\nClassification Report 2nd:")
+print("\nClassification Report (DecisionTree):")
 print(classification_report(y_test, y_pred))
 
-
-
+print(f"\nAccuracy of Decision Tree Classifier model: {accuracy}")
